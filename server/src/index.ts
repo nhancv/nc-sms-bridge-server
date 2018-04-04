@@ -1,9 +1,8 @@
-import { Socket } from 'net'
-import { disconnect } from 'cluster'
 
 const express = require('express')
-const app = express()
+const cors = require('cors')
 const path = require('path')
+const app = express()
 
 const http = require('http').Server(app)
 const io = require('socket.io')(http)
@@ -12,15 +11,17 @@ const uuidv4 = require('uuid/v4')
 const log = console.log
 var port = process.env.PORT || 4000
 
-// Routing
-var frontendDir = path.join(
-  path.dirname(path.dirname(__dirname)),
-  'frontend'
-)
+// CORS on ExpressJS: https://github.com/expressjs/cors
+app.use(cors())
 
-app.use(express.static(path.join(frontendDir, 'build')))
-app.get('/', function(req, res) {
+// For fontend route
+var frontendDir = path.join(path.dirname(path.dirname(__dirname)), 'frontend')
+app.use('/home', express.static(path.join(frontendDir, 'build')))
+app.get('/home', function(req, res) {
   res.sendFile(path.join(frontendDir, 'build', 'index.html'))
+})
+app.get('/', function(req, res) {
+  res.redirect('/home')
 })
 
 var devices = {
@@ -122,7 +123,7 @@ io.on('connection', function(socket) {
   })
   socket.on('disconnect', function() {
     log(`Socket ${getLastInfo(socket)} disconnected.`)
-    removeDevice(disconnect)
+    removeDevice(socket)
   })
   socket.on('frontend.actionSendMsg', function(msg) {
     log('frontend.actionSendMsg', msg)
